@@ -1,42 +1,69 @@
 <!doctype html>
-<html lang="en">
+<html lang="nl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Friday?</title>
+  <title>Vrijdag ZUIPEN?</title>
   <style>
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
       background: radial-gradient(circle at top, #fff3d6, #fff);
+      overflow: hidden;
     }
+
+    /* subtle beer wallpaper */
+    .bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.12;
+      font-size: 32px;
+      line-height: 1;
+      filter: blur(0.2px);
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 18px;
+      padding: 24px;
+      transform: rotate(-6deg) scale(1.05);
+    }
+
     .card {
-      width: min(560px, 92vw);
+      position: relative;
+      width: min(620px, 92vw);
       background: white;
       border: 1px solid #ffe0a6;
       border-radius: 18px;
       padding: 28px;
       box-shadow: 0 10px 30px rgba(0,0,0,.08);
       text-align: center;
+      z-index: 2;
     }
+
     .emoji { font-size: 44px; line-height: 1; margin-bottom: 10px; }
     h1 { margin: 0 0 8px; font-size: 28px; }
-    p { margin: 0 0 18px; opacity: .85; }
+    p  { margin: 0 0 18px; opacity: .85; }
 
-    .btns {
-      display: flex;
-      justify-content: center;
-      gap: 14px;
-      margin-top: 14px;
+    /* ✅ FIX: compact arena instead of long rectangle */
+    .arena-wrap {
+      display: grid;
+      place-items: center;
+    }
+
+    .arena {
       position: relative;
-      height: 74px;
-      padding: 6px;
-      border-radius: 14px;
+      display: inline-block;     /* key: shrink to content */
+      padding: 18px 18px;
+      border-radius: 16px;
       background: #fff7e6;
       border: 1px dashed #ffd48a;
+      width: min(520px, 92vw);   /* still responsive */
+      height: 96px;              /* tight area: just enough to run around */
       overflow: hidden;
     }
 
@@ -49,19 +76,25 @@
       transition: transform .15s ease;
       user-select: none;
       white-space: nowrap;
+      position: absolute; /* both buttons positioned inside compact arena */
+      top: 50%;
+      transform: translateY(-50%);
     }
+
     #yes {
+      left: 18px;
       background: #ff8a00;
       color: white;
-      transform: scale(1);
       box-shadow: 0 8px 18px rgba(255,138,0,.25);
+      transform: translateY(-50%) scale(1);
+      z-index: 2;
     }
+
     #no {
+      right: 18px;
       background: #f1f1f1;
       color: #333;
-      position: absolute; /* lets it “run away” */
-      left: 60%;
-      top: 8px;
+      z-index: 1;
     }
 
     .success {
@@ -75,42 +108,74 @@
       font-size: 16px;
     }
 
-    /* tiny floating cheers effect */
+    /* beer confetti */
+    .beer {
+      position: fixed;
+      top: -40px;
+      font-size: 26px;
+      pointer-events: none;
+      animation: fall linear forwards;
+      z-index: 3;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.12));
+    }
+    @keyframes fall {
+      to { transform: translateY(calc(100vh + 80px)) rotate(540deg); opacity: 0.95; }
+    }
+
+    /* little toast pop */
     .toast {
       position: fixed;
       left: 50%;
       top: 55%;
       transform: translate(-50%, -50%);
-      font-size: 28px;
+      font-size: 30px;
       opacity: 0;
       pointer-events: none;
-      animation: pop 900ms ease-out forwards;
+      animation: pop 850ms ease-out forwards;
+      z-index: 4;
     }
     @keyframes pop {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
-      20% { opacity: 1; transform: translate(-50%, -70%) scale(1.1); }
-      100% { opacity: 0; transform: translate(-50%, -140%) scale(1.2); }
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(.8); }
+      20%  { opacity: 1; transform: translate(-50%, -70%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -150%) scale(1.2); }
     }
   </style>
 </head>
+
 <body>
+  <div class="bg" aria-hidden="true" id="bg"></div>
+
   <div class="card">
     <div class="emoji">🍻</div>
-    <h1>Gaan we keihard zuipe vrijdag?</h1>
-    <p id="hint">Kies Nu.</p>
+    <h1>Gaan we keihard zuipen vrijdag?</h1>
+    <p id="hint">Kies nu. (en lieg niet)</p>
 
-    <div class="btns" id="arena" aria-label="choices">
-      <button id="yes">YES, full send 🍺</button>
-      <button id="no">nee 😇</button>
+    <div class="arena-wrap">
+      <div class="arena" id="arena" aria-label="keuze">
+        <button id="yes">JA, volle bak 🍺</button>
+        <button id="no">nee ik doe rustig 😇</button>
+      </div>
     </div>
 
     <div class="success" id="success">
-      <div><strong>LET’S GOOOOO</strong> 🥶🍻</div>
-      <div class="sub">Lekker mwan.</div>
+      <div><strong>LETSGOOOOOO</strong> 🥶🍻🍻🍻</div>
+      <div class="sub">Oké dan. Vrijdag: absolute degeneracy. Ik verwacht iedereen.</div>
     </div>
   </div>
 
   <script>
+    // build beer wallpaper
+    const bg = document.getElementById("bg");
+    const tiles = 120;
+    const icons = ["🍺","🍻","🥃","🍾","🥂","🔥","🧃"]; // last one for the "one responsible guy"
+    for (let i = 0; i < tiles; i++) {
+      const s = document.createElement("span");
+      s.textContent = icons[Math.floor(Math.random() * icons.length)];
+      s.style.opacity = (Math.random() * 0.6 + 0.2).toFixed(2);
+      s.style.transform = `rotate(${(Math.random()*20-10).toFixed(1)}deg)`;
+      bg.appendChild(s);
+    }
+
     const arena = document.getElementById("arena");
     const yes = document.getElementById("yes");
     const no = document.getElementById("no");
@@ -119,52 +184,65 @@
 
     let yesScale = 1;
 
-    function rand(min, max) {
-      return Math.random() * (max - min) + min;
+    function rand(min, max) { return Math.random() * (max - min) + min; }
+
+    function popToast() {
+      const el = document.createElement("div");
+      el.className = "toast";
+      const popIcons = ["🍻","🍺","🥃","🍾","🔥","😈"];
+      el.textContent = popIcons[Math.floor(Math.random() * popIcons.length)];
+      el.style.left = `${rand(35, 65)}%`;
+      el.style.top  = `${rand(45, 60)}%`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 900);
     }
 
-    function spawnToast() {
-      const el = document.createElement("div");
-      const icons = ["🍻","🍺","🥃","🍾","🥂","🔥"];
-      el.className = "toast";
-      el.textContent = icons[Math.floor(Math.random() * icons.length)];
-      el.style.left = `${rand(35, 65)}%`;
-      el.style.top = `${rand(45, 60)}%`;
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 950);
+    function beerRain(count = 18) {
+      const fallIcons = ["🍺","🍻","🥃","🍾","🥂"];
+      for (let i = 0; i < count; i++) {
+        const b = document.createElement("div");
+        b.className = "beer";
+        b.textContent = fallIcons[Math.floor(Math.random() * fallIcons.length)];
+        b.style.left = `${rand(0, 100)}vw`;
+        b.style.animationDuration = `${rand(1.4, 2.6)}s`;
+        b.style.opacity = `${rand(0.65, 1)}`;
+        document.body.appendChild(b);
+        setTimeout(() => b.remove(), 3000);
+      }
     }
 
     function moveNo() {
       const rect = arena.getBoundingClientRect();
 
-      // Keep the button inside the arena
-      const maxX = rect.width - no.offsetWidth - 6;
-      const maxY = rect.height - no.offsetHeight - 6;
+      // keep inside the compact arena
+      const pad = 10;
+      const maxX = rect.width - no.offsetWidth - pad;
+      const maxY = rect.height - no.offsetHeight - pad;
 
-      const x = rand(6, Math.max(6, maxX));
-      const y = rand(6, Math.max(6, maxY));
+      const x = rand(pad, Math.max(pad, maxX));
+      const y = rand(pad, Math.max(pad, maxY));
 
       no.style.left = `${x}px`;
       no.style.top = `${y}px`;
+      no.style.right = "auto"; // disable right once it starts moving
 
-      // “Yes takes over”
-      yesScale = Math.min(2.35, yesScale + 0.12);
-      yes.style.transform = `scale(${yesScale})`;
+      // Yes takes over
+      yesScale = Math.min(2.6, yesScale + 0.14);
+      yes.style.transform = `translateY(-50%) scale(${yesScale})`;
 
-      // Make it fun
-      spawnToast();
+      popToast();
 
-      // Update the prompt a bit
       const lines = [
-        "c’monnn 😏",
-        "Niet liegen 😂",
-        "stop met proberen",
-        "verantwoordelijkheid is saai",
-        "Vrijdag belt! 📞",
+        "ahhh jawel 😈",
+        "stop met doen 😂",
+        "neeeeh gij komt mee",
+        "rustig? wie is dat?",
+        "vrijdag = chaos 🍻",
       ];
       hint.textContent = lines[Math.floor(Math.random() * lines.length)];
     }
 
+    // run away triggers
     no.addEventListener("mouseenter", moveNo);
     no.addEventListener("touchstart", (e) => {
       e.preventDefault();
@@ -178,9 +256,13 @@
     yes.addEventListener("click", () => {
       success.style.display = "block";
       arena.style.display = "none";
-      hint.textContent = "Juiste keuze.";
-      for (let i = 0; i < 10; i++) setTimeout(spawnToast, i * 90);
+      hint.textContent = "Correct. Degens assemble.";
+      beerRain(35);
+      for (let i = 0; i < 10; i++) setTimeout(popToast, i * 90);
     });
+
+    // start positions (make sure no is visible nicely at first)
+    // (no stays right initially via CSS; after first move it becomes left/top)
   </script>
 </body>
 </html>
